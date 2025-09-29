@@ -1,10 +1,10 @@
+﻿using API.Controllers;
 using API.DTOs;
-using API.Entities;
 using API.Extensions;
-using API.Interfaces;
+using API.Helpers;
 using Microsoft.AspNetCore.Mvc;
 
-namespace API.Controllers;
+namespace API;
 
 public class LikesController(ILikesRepository likesRepository) : BaseApiController
 {
@@ -12,8 +12,11 @@ public class LikesController(ILikesRepository likesRepository) : BaseApiControll
     public async Task<ActionResult> ToggleLike(int targetUserId)
     {
         var sourceUserId = User.GetUserId();
-        if (sourceUserId == targetUserId) return BadRequest("You can not like yourself");
+
+        if (sourceUserId == targetUserId) return BadRequest("You cannot like yourself");
+
         var existingLike = await likesRepository.GetUserLike(sourceUserId, targetUserId);
+
         if (existingLike == null)
         {
             var like = new UserLike
@@ -24,7 +27,7 @@ public class LikesController(ILikesRepository likesRepository) : BaseApiControll
 
             likesRepository.AddLike(like);
         }
-        else
+        else 
         {
             likesRepository.DeleteLike(existingLike);
         }
@@ -34,7 +37,6 @@ public class LikesController(ILikesRepository likesRepository) : BaseApiControll
         return BadRequest("Failed to update like");
     }
 
-
     [HttpGet("list")]
     public async Task<ActionResult<IEnumerable<int>>> GetCurrentUserLikeIds()
     {
@@ -42,10 +44,13 @@ public class LikesController(ILikesRepository likesRepository) : BaseApiControll
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<MemberDto>>> GetUserLikes(string predicate)
+    public async Task<ActionResult<IEnumerable<MemberDto>>> GetUserLikes([FromQuery]LikesParams likesParams)
     {
-        var users = await likesRepository.GetUserLikes(predicate, User.GetUserId());
+        likesParams.UserId = User.GetUserId();
+        var users = await likesRepository.GetUserLikes(likesParams);
+
+        Response.AddPaginationHeader(users);
+
         return Ok(users);
     }
-
 }

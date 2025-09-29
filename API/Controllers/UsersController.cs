@@ -21,7 +21,7 @@ public class UsersController(IUserRepository userRepository, IMapper mapper,
         var users = await userRepository.GetMembersAsync(userParams);
 
         Response.AddPaginationHeader(users);
-        
+
         return Ok(users);
     }
 
